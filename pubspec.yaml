@@ -1,0 +1,47 @@
+name: appeler
+description: A new Flutter project.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_andomie: ^0.1.2
+  cupertino_icons: ^1.0.2
+
+  # Authentications
+  firebase_core: ^2.6.1
+  firebase_core_platform_interface: ^4.5.3
+  firebase_messaging: ^14.2.4
+  firebase_auth: ^4.2.2
+  flutter_facebook_auth: ^5.0.7
+  google_sign_in: ^6.0.0
+  local_auth: ^2.1.3
+
+  #Database Handler
+  shared_preferences: ^2.0.15 # Cache Mode
+  cloud_firestore: ^4.4.2
+  firebase_database: ^10.0.13
+
+  # Dependency Injections
+  get_it: ^7.2.0
+
+  # State management
+  flutter_bloc: ^8.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+    - assets/images/

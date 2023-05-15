@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "926347959879",
+    "project_id": "appeler-7dbb2",
+    "storage_bucket": "appeler-7dbb2.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:926347959879:android:e0a3130821f8e6f7b6db62",
+        "android_client_info": {
+          "package_name": "bd.tal.calling.appeler"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "926347959879-lt3ksh4ffj8gsvlrkfcdp1idl0743ki7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "bd.tal.calling.appeler",
+            "certificate_hash": "52df62e6ff3884a214b48e59ab4bb4d88c9446e7"
+          }
+        },
+        {
+          "client_id": "926347959879-tqaoju7n36tc2i7cor03983kpmaanfs1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBdv2p6_Rh4gCwmYQ_2urdq7lADssiGCvE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "926347959879-tqaoju7n36tc2i7cor03983kpmaanfs1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
