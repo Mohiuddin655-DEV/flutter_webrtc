@@ -5,37 +5,37 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../index.dart';
 
-class HomeActivity extends StatelessWidget {
-  static const String route = "home";
-  static const String title = "Home";
+class MeetingActivity extends StatelessWidget {
+  static const String route = "meeting";
+  static const String title = "Meeting";
 
-  const HomeActivity({Key? key}) : super(key: key);
+  final String meetingId;
+
+  const MeetingActivity({
+    Key? key,
+    required this.meetingId,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => locator<HomeController>()),
+        BlocProvider(create: (context) => locator<MeetingController>()),
       ],
-      child: BlocConsumer<HomeController, AuthResponse>(
-        listener: (context, state) {
-          if (!state.isLoggedIn) {
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              AuthActivity.route,
-              (route) => false,
-            );
-          }
-        },
+      child: BlocConsumer<MeetingController, Response<dynamic>>(
+        listener: (context, state) {},
         builder: (context, state) {
           return Scaffold(
             appBar: AppBar(
               backgroundColor: Colors.white,
               elevation: 0.5,
               title: const RawText(
-                text: AppInfo.name,
+                text: title,
                 textColor: Colors.black,
                 textSize: 20,
+              ),
+              iconTheme: const IconThemeData(
+                color: Colors.black,
               ),
               actions: [
                 Column(
@@ -43,14 +43,11 @@ class HomeActivity extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     GestureDetector(
-                      onTap: (){
-                        context.read<HomeController>().signOut();
-                      },
+                      onTap: () {},
                       child: Container(
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withAlpha(05)
-                        ),
+                            shape: BoxShape.circle,
+                            color: Colors.black.withAlpha(05)),
                         padding: const EdgeInsets.all(8),
                         margin: const EdgeInsets.only(right: 8),
                         child: RawIcon(
@@ -64,8 +61,8 @@ class HomeActivity extends StatelessWidget {
                 )
               ],
             ),
-            body: const HomeBody(
-              type: HomeBodyType.initial,
+            body: MeetingFragment(
+              meetingId: meetingId,
             ),
           );
         },

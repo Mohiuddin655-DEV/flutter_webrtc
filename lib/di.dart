@@ -90,4 +90,7 @@ void _controllers() {
       userHandler: locator(),
     );
   });
+  locator.registerFactory<MeetingController>(() {
+    return MeetingController();
+  });
 }

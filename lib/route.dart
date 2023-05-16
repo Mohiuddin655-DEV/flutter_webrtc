@@ -17,18 +17,20 @@ class AppRouter {
         return _auth(data);
       case HomeActivity.route:
         return _home(data);
+      case MeetingActivity.route:
+        return _meeting(data);
       default:
         return _error(data);
     }
   }
 
-  Route<T> _splash<T>(dynamic data) {
+  Route<T> _splash<T>(Object? data) {
     return MaterialPageRoute(
       builder: (context) => const SplashActivity(),
     );
   }
 
-  Route<T> _auth<T>(dynamic data) {
+  Route<T> _auth<T>(Object? data) {
     return MaterialPageRoute(
       builder: (context) => AuthActivity(
         type: data is AuthFragmentType ? data : null,
@@ -36,13 +38,21 @@ class AppRouter {
     );
   }
 
-  Route<T> _home<T>(dynamic data) {
+  Route<T> _home<T>(Object? data) {
     return MaterialPageRoute(
       builder: (context) => const HomeActivity(),
     );
   }
 
-  Route<T> _error<T>(dynamic data) {
+  Route<T> _meeting<T>(Object? data) {
+    return MaterialPageRoute(
+      builder: (context) => MeetingActivity(
+        meetingId: data.getValue("meeting_id"),
+      ),
+    );
+  }
+
+  Route<T> _error<T>(Object? data) {
     return MaterialPageRoute(
       builder: (context) => const ErrorScreen(),
     );
