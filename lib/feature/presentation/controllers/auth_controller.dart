@@ -1,6 +1,7 @@
 import 'package:flutter_andomie/core.dart';
 
 class AppAuthController extends AuthController {
+
   AppAuthController({
     required super.handler,
     required super.userHandler,

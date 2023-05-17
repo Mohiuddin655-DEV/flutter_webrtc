@@ -1,5 +1,4 @@
-library home;
+library join;
 
 export 'activity.dart';
-export 'body.dart';
 export 'fragment.dart';

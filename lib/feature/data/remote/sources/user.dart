@@ -1,8 +1,10 @@
 import 'package:flutter_andomie/core.dart';
 
+import '../../../../index.dart';
+
 class UserDataSource extends FireStoreDataSourceImpl<UserEntity> {
   UserDataSource({
-    super.path = "users",
+    super.path = ApiKeys.users,
   });
 
   @override

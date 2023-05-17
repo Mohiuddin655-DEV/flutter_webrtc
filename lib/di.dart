@@ -1,3 +1,4 @@
+import 'package:appeler/feature/data/remote/sources/room.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -45,6 +46,9 @@ void _dataSources() {
   locator.registerLazySingleton<LocalDataSource<UserEntity>>(() {
     return LocalUserDataSource(db: locator());
   });
+  locator.registerLazySingleton<DataSource<Meeting>>(() {
+    return MeetingDataSource();
+  });
 }
 
 void _repositories() {
@@ -63,6 +67,11 @@ void _repositories() {
       local: locator(),
     );
   });
+  locator.registerLazySingleton<DataRepository<Meeting>>(() {
+    return DataRepositoryImpl<Meeting>(
+      remote: locator(),
+    );
+  });
 }
 
 void _handlers() {
@@ -73,6 +82,11 @@ void _handlers() {
     return UserHandlerImpl(
       repository: locator(),
       localDataRepository: locator(),
+    );
+  });
+  locator.registerLazySingleton<MeetingHandler>(() {
+    return MeetingHandler(
+      repository: locator(),
     );
   });
 }
@@ -88,9 +102,12 @@ void _controllers() {
     return HomeController(
       handler: locator(),
       userHandler: locator(),
+      roomHandler: locator(),
     );
   });
   locator.registerFactory<MeetingController>(() {
-    return MeetingController();
+    return MeetingController(
+      handler: locator(),
+    );
   });
 }

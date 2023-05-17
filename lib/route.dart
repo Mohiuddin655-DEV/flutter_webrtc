@@ -19,6 +19,10 @@ class AppRouter {
         return _home(data);
       case MeetingActivity.route:
         return _meeting(data);
+      case JoinActivity.route:
+        return _join(data);
+      case PrepareActivity.route:
+        return _prepare(data);
       default:
         return _error(data);
     }
@@ -47,7 +51,25 @@ class AppRouter {
   Route<T> _meeting<T>(Object? data) {
     return MaterialPageRoute(
       builder: (context) => MeetingActivity(
+        data: data.getValue("data"),
+        homeController: data.getValue("HomeController"),
+      ),
+    );
+  }
+
+  Route<T> _join<T>(Object? data) {
+    return MaterialPageRoute(
+      builder: (context) => JoinActivity(
+        homeController: data.getValue("HomeController"),
+      ),
+    );
+  }
+
+  Route<T> _prepare<T>(Object? data) {
+    return MaterialPageRoute(
+      builder: (context) => PrepareActivity(
         meetingId: data.getValue("meeting_id"),
+        homeController: data.getValue("HomeController"),
       ),
     );
   }

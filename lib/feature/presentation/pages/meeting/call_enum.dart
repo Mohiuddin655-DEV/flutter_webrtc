@@ -1,4 +1,4 @@
-enum CallEnum{
+enum ContributorType{
   outgoing,
   incoming
 }

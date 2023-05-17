@@ -1,30 +1,37 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:appeler/feature/presentation/pages/meeting/contributor_card.dart';
+import 'package:appeler/feature/presentation/pages/meeting/remote_user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_andomie/core.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-import 'calling_type.dart';
-import 'user_remote.dart';
+import '../../../../index.dart';
 
 class MeetingFragment extends StatefulWidget {
-  final String meetingId;
+  final MeetingInfo info;
+  final Function(MediaStreamTrack) switchCamera;
 
   const MeetingFragment({
     super.key,
-    required this.meetingId,
+    required this.info,
+    required this.switchCamera,
   });
 
   @override
-  State<MeetingFragment> createState() => _MeetingFragmentState();
+  State<MeetingFragment> createState() => MeetingFragmentState();
 }
 
-class _MeetingFragmentState extends State<MeetingFragment> {
-  final _groupChatRooms =
-      FirebaseFirestore.instance.collection('group-chat-rooms');
-  late final _userDoc = _groupChatRooms.doc(widget.meetingId);
+class MeetingFragmentState extends State<MeetingFragment> {
+  late final controller = context.read<MeetingController>();
+  late bool isCameraOn = widget.info.isCameraOn;
+  late bool isMute = widget.info.isMuted;
+  late bool isFrontCamera = widget.info.cameraType == CameraType.front;
+  bool isRiseHand = false;
+  bool isReserveMode = true;
+  int crossAxisCount = 3;
 
   final _localRenderer = RTCVideoRenderer();
   MediaStream? _localStream;
@@ -51,142 +58,49 @@ class _MeetingFragmentState extends State<MeetingFragment> {
     return stream;
   }
 
+  @override
+  void initState() {
+    _initLocalRenderer();
+    super.initState();
+  }
+
   void _initLocalRenderer() async {
     await _localRenderer.initialize();
     _localStream = await _getUserMediaStream;
+    _localStream?.getAudioTracks()[0].enabled = isMute;
+    _localStream?.getVideoTracks()[0].enabled = isCameraOn;
     setState(() {
       _localRenderer.srcObject = _localStream;
-      _widgetMap['local'] = Flexible(
+      _widgetMap['local'] = ContributorCard(
         key: UniqueKey(),
-        child: Stack(
-          children: [
-            Container(
-              margin: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Colors.black),
-              child: RTCVideoView(_localRenderer, mirror: true),
-            ),
-            Positioned(
-              top: 10,
-              left: 10,
-              child: Text(
-                AuthHelper.uid,
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 20,
-                ),
-              ),
-            ),
-            PositionThumbsWidget(
-              top: 20,
-              right: 20,
-              userId: AuthHelper.uid,
-              groupId: widget.meetingId,
-            ),
-            PositionMicWidget(
-              bottom: 20,
-              right: 20,
-              userId: AuthHelper.uid,
-              groupId: widget.meetingId,
-            ),
-            PositionCameraWidget(
-              bottom: 20,
-              left: 20,
-              userId: AuthHelper.uid,
-              groupId: widget.meetingId,
-            ),
-          ],
-        ),
+        renderer: _localRenderer,
+        meetingId: widget.info.id,
+        uid: AuthHelper.uid,
       );
     });
-    _addCurrentUser();
+    _setStatus();
     _offerAnswerHostUser();
   }
 
-  void _addCurrentUser() {
-    _userDoc.get().then((value) {
-      final curMap = value.data()!;
-      curMap[AuthHelper.uid] = {
-        'isMute': true,
-        'handUp': false,
-        'isCameraOn': true,
-      };
-      _userDoc.set(curMap);
-    });
-  }
-
-  void _removeCurrentUser() {
-    _userDoc.get().then((value) {
-      final curMap = value.data()!;
-      curMap.remove(AuthHelper.uid);
-      if (curMap.isEmpty) {
-        _userDoc.delete();
-      } else {
-        _userDoc.set(curMap);
-      }
-    });
-  }
-
-  void _disposeLocalRenderer() {
-    _localRenderer.dispose();
-    _localStream?.getTracks().forEach((element) {
-      element.stop();
-    });
-    _localStream?.dispose();
-  }
-
-  void _disposeSubs() {
-    _hostSubs?.cancel();
-    _roomSubs?.cancel();
-  }
-
   void _offerAnswerHostUser() {
-    _hostSubs = _userDoc.snapshots().listen((event) {
+    _hostSubs = controller.handler
+        .getMeetingReference(widget.info.id)
+        .snapshots()
+        .listen((event) {
       final mp = event.data();
-      if (mp != null) {
+      if (mp != null && mp is Map<String, dynamic>) {
         for (final item in mp.entries) {
           final curItem = item.key;
           if (curItem != AuthHelper.uid && !_addedUser.contains(curItem)) {
             _addedUser.add(curItem);
-            _widgetMap[curItem] = Flexible(
+            _widgetMap[curItem] = RemoteContributor(
               key: UniqueKey(),
-              child: Stack(
-                children: [
-                  GroupCallingRemoteScreen(
-                    key: ValueKey(curItem),
-                    callEnum: AuthHelper.uid.compareTo(curItem) > 0
-                        ? CallEnum.outgoing
-                        : CallEnum.incoming,
-                    id: curItem,
-                    localStream: _localStream!,
-                  ),
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Text(
-                      curItem,
-                      style: const TextStyle(color: Colors.red, fontSize: 20),
-                    ),
-                  ),
-                  PositionThumbsWidget(
-                    top: 20,
-                    right: 20,
-                    userId: curItem,
-                    groupId: widget.meetingId,
-                  ),
-                  PositionMicWidget(
-                    bottom: 20,
-                    right: 20,
-                    userId: curItem,
-                    groupId: widget.meetingId,
-                  ),
-                  PositionCameraWidget(
-                    bottom: 20,
-                    left: 20,
-                    userId: curItem,
-                    groupId: widget.meetingId,
-                  ),
-                ],
-              ),
+              type: AuthHelper.uid.compareTo(curItem) > 0
+                  ? ContributorType.outgoing
+                  : ContributorType.incoming,
+              uid: curItem,
+              meetingId: widget.info.id,
+              local: _localStream!,
             );
           }
         }
@@ -205,295 +119,155 @@ class _MeetingFragmentState extends State<MeetingFragment> {
     });
   }
 
+  void _changeStatus({required String key}) {
+    controller.handler.changeStatus(
+      id: widget.info.id,
+      isMute: isMute,
+      isRiseHand: isRiseHand,
+      isCameraOn: isCameraOn,
+      isFrontCamera: isFrontCamera,
+    );
+  }
+
+  void _setStatus() {
+    controller.handler.setStatus(
+      id: widget.info.id,
+      isMute: isMute,
+      isRiseHand: isRiseHand,
+      isCameraOn: isCameraOn,
+      isFrontCamera: isFrontCamera,
+    );
+  }
+
+  void _removeStatus() {
+    controller.handler.removeStatus(widget.info.id);
+  }
+
+  void switchCamera() {
+    if (_localStream != null) {
+      Helper.switchCamera(_localStream!.getVideoTracks()[0]);
+    }
+  }
+
+  void silentMode(bool silent) {
+    Helper.setSpeakerphoneOn(silent);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: double.infinity,
+      child: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  child: GridView(
+                    // reverse: isReserveMode,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: 3 / 5,
+                    ),
+                    children: _widgetMap.entries.map((e) => e.value).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 16,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ImageButton(
+                  icon: Icons.call_end,
+                  tint: Colors.white,
+                  background: Colors.red,
+                  size: 32,
+                  onClick: () => Navigator.pop(context),
+                ),
+                ImageButton(
+                  icon: isCameraOn
+                      ? Icons.videocam_outlined
+                      : Icons.videocam_off_outlined,
+                  tint: isCameraOn ? Colors.black : Colors.white,
+                  background: isCameraOn ? Colors.white : Colors.white12,
+                  size: 32,
+                  onClick: () {
+                    isCameraOn = !isCameraOn;
+                    setState(() {
+                      _localStream?.getVideoTracks()[0].enabled = isCameraOn;
+                      _changeStatus(key: 'isCameraOn');
+                    });
+                  },
+                ),
+                ImageButton(
+                  icon: isMute ? Icons.mic_off : Icons.mic,
+                  tint: isMute ? Colors.white : Colors.black,
+                  background: isMute ? Colors.white12 : Colors.white,
+                  size: 32,
+                  onClick: () {
+                    isMute = !isMute;
+                    setState(() {
+                      _localStream?.getAudioTracks()[0].enabled = isMute;
+                      _changeStatus(key: 'isMute');
+                    });
+                  },
+                ),
+                ImageButton(
+                  icon: Icons.back_hand_outlined,
+                  tint: isRiseHand ? Colors.black : Colors.white,
+                  background: isRiseHand ? Colors.white : Colors.white12,
+                  size: 32,
+                  onClick: () {
+                    isRiseHand = !isRiseHand;
+                    setState(() {
+                      _changeStatus(key: 'handUp');
+                    });
+                  },
+                ),
+                ImageButton(
+                  icon: Icons.more_vert,
+                  tint: Colors.white,
+                  background: Colors.white12,
+                  size: 32,
+                  onClick: () {
+                    widget.switchCamera(_localStream!.getVideoTracks()[0]);
+                  },
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _disposeSubs();
-    _removeCurrentUser();
+    _removeStatus();
     _disposeLocalRenderer();
     super.dispose();
   }
 
-  @override
-  void initState() {
-    _initLocalRenderer();
-    //_addCurrentUser();
-    //_offerAnswerHostUser();
-    super.initState();
-  }
-
-  void _commonStatusChangeWork({required String workKey}) {
-    _userDoc.get().then((value) {
-      final curMap = value.data()!;
-      curMap[AuthHelper.uid][workKey] = !curMap[AuthHelper.uid][workKey];
-      _userDoc.set(curMap);
+  void _disposeLocalRenderer() {
+    _localRenderer.dispose();
+    _localStream?.getTracks().forEach((element) {
+      element.stop();
     });
+    _localStream?.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text('ID: ${widget.meetingId}'),
-        ),
-        body: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                InnerIconButton(
-                  icon: Icons.thumb_up_off_alt_sharp,
-                  onPressed: () {
-                    _commonStatusChangeWork(workKey: 'handUp');
-                  },
-                  enabled: false,
-                ),
-                const SizedBox(width: 5),
-                InnerIconButton(
-                  icon: Icons.mic,
-                  onPressed: () {
-                    _commonStatusChangeWork(workKey: 'isMute');
-                    final audioTrackEnabled =
-                        !_localStream!.getAudioTracks()[0].enabled;
-                    _localStream?.getAudioTracks()[0].enabled =
-                        audioTrackEnabled;
-                  },
-                  enabled: true,
-                ),
-                const SizedBox(width: 5),
-                InnerIconButton(
-                  icon: Icons.video_call,
-                  onPressed: () {
-                    _commonStatusChangeWork(workKey: 'isCameraOn');
-                    final videoTrackEnabled =
-                        !_localStream!.getVideoTracks()[0].enabled;
-                    _localStream?.getVideoTracks()[0].enabled =
-                        videoTrackEnabled;
-                  },
-                  enabled: true,
-                ),
-              ],
-            ),
-            Expanded(
-              child: _localStream == null
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : Column(
-                      children: _widgetMap.entries.map((e) => e.value).toList(),
-                    ),
-            )
-          ],
-        ));
-  }
-}
-
-class PositionThumbsWidget extends StatefulWidget {
-  const PositionThumbsWidget(
-      {super.key,
-      this.left,
-      this.bottom,
-      this.right,
-      this.top,
-      required this.userId,
-      required this.groupId});
-
-  final double? left, top, right, bottom;
-  final String userId, groupId;
-
-  @override
-  State<PositionThumbsWidget> createState() => _PositionThumbsWidgetState();
-}
-
-class _PositionThumbsWidgetState extends State<PositionThumbsWidget> {
-  final _groupChatRooms =
-      FirebaseFirestore.instance.collection('group-chat-rooms');
-  late final _userDoc = _groupChatRooms.doc(widget.groupId);
-  var _isEnabled = false;
-
-  StreamSubscription? _sub;
-
-  @override
-  void initState() {
-    _sub = _userDoc.snapshots().listen((event) {
-      final mp = event.data()?[widget.userId];
-      if (mp != null) {
-        setState(() {
-          _isEnabled = mp['handUp'];
-        });
-      }
-    });
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _sub?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-        top: widget.top,
-        left: widget.left,
-        right: widget.right,
-        bottom: widget.bottom,
-        child: Icon(
-          Icons.thumb_up_off_alt_sharp,
-          color: _isEnabled ? Colors.yellow : Colors.white,
-          size: 50,
-        ));
-  }
-}
-
-class PositionMicWidget extends StatefulWidget {
-  const PositionMicWidget(
-      {super.key,
-      this.left,
-      this.bottom,
-      this.right,
-      this.top,
-      required this.userId,
-      required this.groupId});
-
-  final double? left, top, right, bottom;
-  final String userId, groupId;
-
-  @override
-  State<PositionMicWidget> createState() => _PositionMicWidgetState();
-}
-
-class _PositionMicWidgetState extends State<PositionMicWidget> {
-  final _groupChatRooms =
-      FirebaseFirestore.instance.collection('group-chat-rooms');
-  late final _userDoc = _groupChatRooms.doc(widget.groupId);
-  var _isEnabled = true;
-
-  StreamSubscription? _sub;
-
-  @override
-  void initState() {
-    _sub = _userDoc.snapshots().listen((event) {
-      final mp = event.data()?[widget.userId];
-      if (mp != null) {
-        setState(() {
-          _isEnabled = mp['isMute'];
-        });
-      }
-    });
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _sub?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: widget.top,
-      left: widget.left,
-      right: widget.right,
-      bottom: widget.bottom,
-      child: Icon(_isEnabled ? Icons.mic : Icons.mic_off,
-          color: Colors.white, size: 50),
-    );
-  }
-}
-
-class PositionCameraWidget extends StatefulWidget {
-  const PositionCameraWidget(
-      {super.key,
-      this.left,
-      this.bottom,
-      this.right,
-      this.top,
-      required this.userId,
-      required this.groupId});
-
-  final double? left, top, right, bottom;
-  final String userId, groupId;
-
-  @override
-  State<PositionCameraWidget> createState() => _PositionCameraWidgetState();
-}
-
-class _PositionCameraWidgetState extends State<PositionCameraWidget> {
-  final _groupChatRooms =
-      FirebaseFirestore.instance.collection('group-chat-rooms');
-  late final _userDoc = _groupChatRooms.doc(widget.groupId);
-  var _isEnabled = true;
-
-  StreamSubscription? _sub;
-
-  @override
-  void initState() {
-    _sub = _userDoc.snapshots().listen((event) {
-      final mp = event.data()?[widget.userId];
-      if (mp != null) {
-        setState(() {
-          _isEnabled = mp['isCameraOn'];
-        });
-      }
-    });
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _sub?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: widget.top,
-      left: widget.left,
-      right: widget.right,
-      bottom: widget.bottom,
-      child: Icon(
-        _isEnabled ? Icons.video_camera_front : Icons.videocam_off,
-        color: Colors.white,
-        size: 50,
-      ),
-    );
-  }
-}
-
-class InnerIconButton extends StatefulWidget {
-  const InnerIconButton({
-    super.key,
-    required this.icon,
-    required this.onPressed,
-    required this.enabled,
-  });
-
-  final IconData icon;
-  final Function() onPressed;
-  final bool enabled;
-
-  @override
-  State<InnerIconButton> createState() => _InnerIconButtonState();
-}
-
-class _InnerIconButtonState extends State<InnerIconButton> {
-  late var _isActive = widget.enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isActive = !_isActive;
-          widget.onPressed.call();
-        });
-      },
-      child: AbsorbPointer(
-        child: Icon(widget.icon, color: _isActive ? Colors.green : null),
-      ),
-    );
+  void _disposeSubs() {
+    _hostSubs?.cancel();
+    _roomSubs?.cancel();
   }
 }

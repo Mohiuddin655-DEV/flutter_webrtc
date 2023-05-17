@@ -12,6 +12,7 @@ dependencies:
 
   flutter_andomie: ^0.1.2
   cupertino_icons: ^1.0.2
+  camera: ^0.10.3+2
 
   # Authentications
   firebase_core: ^2.6.1
@@ -33,6 +34,8 @@ dependencies:
   # State management
   flutter_bloc: ^8.1.2
   flutter_webrtc: ^0.9.29+hotfix.1
+  share_plus: ^7.0.0
+  awesome_dialog: ^3.0.2
 
 dev_dependencies:
   flutter_test:

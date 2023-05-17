@@ -1,62 +1,48 @@
 import 'dart:async';
 
+import 'package:appeler/feature/presentation/controllers/index.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_andomie/core.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
-import 'calling_type.dart';
+import '../../../../index.dart';
+import 'call_enum.dart';
 
-class GroupCallingRemoteScreen extends StatefulWidget {
-  const GroupCallingRemoteScreen({
+class RemoteContributor extends StatefulWidget {
+  final String uid;
+  final String meetingId;
+  final MediaStream local;
+  final ContributorType type;
+
+  const RemoteContributor({
     super.key,
-    required this.callEnum,
-    required this.id,
-    required this.localStream,
+    required this.uid,
+    required this.meetingId,
+    required this.local,
+    required this.type,
   });
 
-  final CallEnum callEnum;
-  final String id;
-  final MediaStream localStream;
-
   @override
-  State<GroupCallingRemoteScreen> createState() =>
-      _GroupCallingRemoteScreenState();
+  State<RemoteContributor> createState() => _RemoteContributorState();
 }
 
-class _GroupCallingRemoteScreenState extends State<GroupCallingRemoteScreen> {
+class _RemoteContributorState extends State<RemoteContributor> {
   final _chatRooms = FirebaseFirestore.instance.collection('chat-rooms');
   final _curUser =
       FirebaseFirestore.instance.collection('users').doc(AuthHelper.uid);
-  late final _curRoom = _chatRooms.doc(widget.callEnum == CallEnum.outgoing
-      ? '${AuthHelper.uid}+${widget.id}'
-      : '${widget.id}+${AuthHelper.uid}');
 
-  // Future<MediaStream> get _getUserMediaStream async {
-  //   final mp = <String, dynamic>{
-  //     'audio': true,
-  //     'video': kIsWeb
-  //         ? {'facingMode': 'user'}
-  //         : {
-  //       'width': '640',
-  //       'height': '480',
-  //       'frameRate': '30',
-  //       'facingMode': 'user',
-  //       'optional': [],
-  //     }
-  //   };
-  //   final stream = await navigator.mediaDevices.getUserMedia(mp);
-  //   return stream;
-  // }
-
-  //late final _curRoom = _chatRooms.doc();
+  late final _curRoom = _chatRooms.doc(widget.type == ContributorType.outgoing
+      ? '${AuthHelper.uid}+${widget.uid}'
+      : '${widget.uid}+${AuthHelper.uid}');
 
   late final _curRoomSelfCandidates = _curRoom.collection(
-      widget.callEnum == CallEnum.outgoing
+      widget.type == ContributorType.outgoing
           ? 'callerCandidate'
           : 'callieCandidate');
   late final _curRoomRemoteCandidates = _curRoom.collection(
-      widget.callEnum == CallEnum.outgoing
+      widget.type == ContributorType.outgoing
           ? 'callieCandidate'
           : 'callerCandidate');
 
@@ -82,8 +68,6 @@ class _GroupCallingRemoteScreenState extends State<GroupCallingRemoteScreen> {
         for (final item in event.docChanges) {
           if (item.type == DocumentChangeType.added) {
             final curData = item.doc.data();
-            print(
-                'new remote added candidate is: $curData and id is: ${item.doc.id}');
             ++totalCandidate;
             if (curData != null) {
               final candidate = RTCIceCandidate(curData['candidate'],
@@ -106,47 +90,27 @@ class _GroupCallingRemoteScreenState extends State<GroupCallingRemoteScreen> {
       track.stop();
     });
     _remoteStream?.dispose();
-    //_peerConnection.dispose();
   }
 
   Future<RTCPeerConnection> _createPeerConnection() async {
     final config = <String, dynamic>{
-      "sdpSemantics": "plan-b", //this line is added
+      "sdpSemantics": "plan-b",
       'iceServers': [
-        //{ "url": "stun:34.143.165.178:3478" },
         {
           "urls": "turn:34.143.165.178:3478?transport=udp",
           "username": "test",
           "credential": "test123",
         },
-        // {
-        //   "url": "turn:180.210.129.103:3478?transport=udp",
-        //   "username": "citlrtc",
-        //   "credential": "c1tlr7c",
-        // }
-        // {
-        //   "urls": "turn:openrelay.metered.ca:80",
-        //   "username": "openrelayproject",
-        //   "credential": "openrelayproject",
-        // }
       ]
     };
 
     final pc = await createPeerConnection(config);
 
-    //_localStream = await _getUserMediaStream;
-    //await pc.addStream(_localStream!);
-
-    pc.addStream(widget.localStream);
-
-    // widget.localStream.getTracks().forEach((track) {
-    //   pc.addTrack(track, widget.localStream);
-    // });
+    pc.addStream(widget.local);
 
     pc.onIceCandidate = (e) {
       if (e.candidate != null) {
         _curRoomSelfCandidates.add(e.toMap());
-        //_curRoomSelfCandidates.doc((++_docId).toString()).set(e.toMap());
       }
     };
 
@@ -199,7 +163,7 @@ class _GroupCallingRemoteScreenState extends State<GroupCallingRemoteScreen> {
     await _initRemoteRenderer();
     await _initPeerConnection();
     _setRemoteCandidate();
-    if (widget.callEnum == CallEnum.outgoing) {
+    if (widget.type == ContributorType.outgoing) {
       _createOffer();
     } else {
       _createAnswer();
@@ -248,17 +212,126 @@ class _GroupCallingRemoteScreenState extends State<GroupCallingRemoteScreen> {
     super.dispose();
   }
 
+  /// READ ME
+
+  late final config = SizeConfig.of(context);
+  late final controller = context.read<MeetingController>();
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _remoteStream == null
-          ? const Center(child: CircularProgressIndicator())
-          : Container(
-              key: UniqueKey(),
-              margin: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Colors.black),
-              child: RTCVideoView(_remoteRenderer, mirror: true),
-            ),
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(config.dx(8)),
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          RTCVideoView(
+            _remoteRenderer,
+            mirror: true,
+            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          ),
+          _Buttons(
+            controller: controller,
+            config: config,
+            meetingId: widget.meetingId,
+            uid: widget.uid,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _Buttons extends StatelessWidget {
+  final MeetingController controller;
+  final SizeConfig config;
+  final String meetingId;
+  final String uid;
+
+  const _Buttons({
+    Key? key,
+    required this.controller,
+    required this.config,
+    required this.meetingId,
+    required this.uid,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(config.dx(8)),
+      ),
+      child: StreamBuilder(
+          stream: controller.handler.liveContributor(meetingId, uid),
+          builder: (context, state) {
+            var item = state.data ?? Contributor();
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                if (item.isRiseHand)
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    child: Container(
+                      margin: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.white24,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.back_hand_outlined,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.white24,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      item.isMute ? Icons.mic_off : Icons.mic,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.white24,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.more_vert,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
     );
   }
 }
