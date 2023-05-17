@@ -43,6 +43,8 @@ class _PrepareFragmentState extends State<PrepareFragment> {
             ),
           ),
           MeetingCamera(
+            initialCameraEnable: true,
+            initialMuteEnable: true,
             onCameraStateChange: (value) {
               isCameraOn = value;
             },

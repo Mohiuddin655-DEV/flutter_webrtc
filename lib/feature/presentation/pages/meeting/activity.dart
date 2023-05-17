@@ -23,8 +23,8 @@ class MeetingActivity extends StatefulWidget {
 }
 
 class _MeetingActivityState extends State<MeetingActivity> {
-
-  bool isSilent = false;
+  late bool isSilent = widget.data.isSilent;
+  late bool isFrontCamera = widget.data.isFrontCamera;
 
   final globalKey = GlobalKey<MeetingFragmentState>();
 
@@ -97,9 +97,6 @@ class _MeetingActivityState extends State<MeetingActivity> {
           child: MeetingFragment(
             key: globalKey,
             info: widget.data,
-            switchCamera: (value){
-              Helper.switchCamera(value);
-            },
           ),
         ),
       ),

@@ -5,7 +5,7 @@ import '../../../../index.dart';
 
 typedef OnPrepare = Function(BuildContext context, MeetingInfo info);
 
-class PrepareActivity extends StatelessWidget {
+class PrepareActivity extends StatefulWidget {
   static const String route = "prepare";
   static const String title = "Prepare";
 
@@ -19,12 +19,20 @@ class PrepareActivity extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<PrepareActivity> createState() => _PrepareActivityState();
+}
+
+class _PrepareActivityState extends State<PrepareActivity> {
+  late bool isSilent = false;
+  late bool isFrontCamera = true;
+
+  @override
   Widget build(BuildContext context) {
-    print(meetingId);
+    print(widget.meetingId);
     return MultiBlocProvider(
       providers: [
-        homeController != null
-            ? BlocProvider.value(value: homeController!)
+        widget.homeController != null
+            ? BlocProvider.value(value: widget.homeController!)
             : BlocProvider(create: (context) => locator<HomeController>())
       ],
       child: Scaffold(
@@ -46,17 +54,30 @@ class PrepareActivity extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.volume_up_outlined,
-                      ),
+                    ImageButton(
+                      onClick: () {
+                        isFrontCamera = !isFrontCamera;
+                        setState(() {});
+                      },
+                      icon: isFrontCamera
+                          ? Icons.camera_front_outlined
+                          : Icons.camera_rear_outlined,
+                      tint: Colors.black.withAlpha(150),
                     ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.info_outline,
-                      ),
+                    ImageButton(
+                      onClick: () {
+                        isSilent = !isSilent;
+                        setState(() {});
+                      },
+                      icon: isSilent
+                          ? Icons.volume_off_outlined
+                          : Icons.volume_up_outlined,
+                      tint: Colors.black.withAlpha(150),
+                    ),
+                    ImageButton(
+                      onClick: () {},
+                      icon: Icons.info_outline,
+                      tint: Colors.black.withAlpha(150),
                     ),
                   ],
                 )
@@ -65,12 +86,15 @@ class PrepareActivity extends StatelessWidget {
           ],
         ),
         body: PrepareFragment(
-          id: meetingId,
+          id: widget.meetingId,
           onPrepare: (context, info) => Navigator.pushReplacementNamed(
             context,
             MeetingActivity.route,
             arguments: {
-              "data": info,
+              "data": info.attach(
+                isSilent: isSilent,
+                cameraType: isFrontCamera ? CameraType.front : CameraType.back,
+              ),
               "HomeController": context.read<HomeController>(),
             },
           ),

@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import '../../index.dart';
 
 class MeetingCamera extends StatefulWidget {
+  final bool initialCameraEnable;
+  final bool initialMuteEnable;
   final Function(bool isCameraOn) onCameraStateChange;
   final Function(bool isMicroOn) onMicroStateChange;
 
   const MeetingCamera({
     Key? key,
+    this.initialCameraEnable = false,
+    this.initialMuteEnable = true,
     required this.onCameraStateChange,
     required this.onMicroStateChange,
   }) : super(key: key);
@@ -17,8 +21,8 @@ class MeetingCamera extends StatefulWidget {
 }
 
 class _MeetingCameraState extends State<MeetingCamera> {
-  bool isCameraOn = false;
-  bool isMuted = true;
+  late bool isCameraOn = widget.initialCameraEnable;
+  late bool isMuted = widget.initialMuteEnable;
 
   @override
   Widget build(BuildContext context) {

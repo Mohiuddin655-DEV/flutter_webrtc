@@ -12,12 +12,10 @@ import '../../../../index.dart';
 
 class MeetingFragment extends StatefulWidget {
   final MeetingInfo info;
-  final Function(MediaStreamTrack) switchCamera;
 
   const MeetingFragment({
     super.key,
     required this.info,
-    required this.switchCamera,
   });
 
   @override
@@ -28,7 +26,7 @@ class MeetingFragmentState extends State<MeetingFragment> {
   late final controller = context.read<MeetingController>();
   late bool isCameraOn = widget.info.isCameraOn;
   late bool isMute = widget.info.isMuted;
-  late bool isFrontCamera = widget.info.cameraType == CameraType.front;
+  late bool isFrontCamera = widget.info.isFrontCamera;
   bool isRiseHand = false;
   bool isReserveMode = true;
   int crossAxisCount = 3;
@@ -68,6 +66,7 @@ class MeetingFragmentState extends State<MeetingFragment> {
     await _localRenderer.initialize();
     _localStream = await _getUserMediaStream;
     _localStream?.getAudioTracks()[0].enabled = isMute;
+    _localStream?.getAudioTracks()[0].enabled = isMute;
     _localStream?.getVideoTracks()[0].enabled = isCameraOn;
     setState(() {
       _localRenderer.srcObject = _localStream;
@@ -80,6 +79,14 @@ class MeetingFragmentState extends State<MeetingFragment> {
     });
     _setStatus();
     _offerAnswerHostUser();
+  }
+
+  void silentMode(bool silent) => Helper.setSpeakerphoneOn(silent);
+
+  void switchCamera() {
+    if (_localStream != null) {
+      Helper.switchCamera(_localStream!.getVideoTracks()[0]);
+    }
   }
 
   void _offerAnswerHostUser() {
@@ -141,16 +148,6 @@ class MeetingFragmentState extends State<MeetingFragment> {
 
   void _removeStatus() {
     controller.handler.removeStatus(widget.info.id);
-  }
-
-  void switchCamera() {
-    if (_localStream != null) {
-      Helper.switchCamera(_localStream!.getVideoTracks()[0]);
-    }
-  }
-
-  void silentMode(bool silent) {
-    Helper.setSpeakerphoneOn(silent);
   }
 
   @override
@@ -238,9 +235,7 @@ class MeetingFragmentState extends State<MeetingFragment> {
                   tint: Colors.white,
                   background: Colors.white12,
                   size: 32,
-                  onClick: () {
-                    widget.switchCamera(_localStream!.getVideoTracks()[0]);
-                  },
+                  onClick: () {},
                 ),
               ],
             ),
