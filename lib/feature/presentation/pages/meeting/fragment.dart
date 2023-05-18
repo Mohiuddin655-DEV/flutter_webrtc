@@ -29,7 +29,7 @@ class MeetingFragmentState extends State<MeetingFragment> {
   late bool isFrontCamera = widget.info.isFrontCamera;
   bool isRiseHand = false;
   bool isReserveMode = true;
-  int crossAxisCount = 3;
+  int crossAxisCount = 2;
 
   final _localRenderer = RTCVideoRenderer();
   MediaStream? _localStream;
@@ -176,21 +176,14 @@ class MeetingFragmentState extends State<MeetingFragment> {
       child: Column(
         children: [
           Expanded(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  child: GridView(
-                    // reverse: isReserveMode,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: 3 / 5,
-                    ),
-                    children: _widgetMap.entries.map((e) => e.value).toList(),
-                  ),
-                ),
-              ],
+            child: GridView(
+              padding: const EdgeInsets.all(24),
+              // reverse: isReserveMode,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: 3 / 5,
+              ),
+              children: _widgetMap.entries.map((e) => e.value).toList(),
             ),
           ),
           Container(
