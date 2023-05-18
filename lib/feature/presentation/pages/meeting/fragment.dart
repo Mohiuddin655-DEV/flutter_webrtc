@@ -65,9 +65,9 @@ class MeetingFragmentState extends State<MeetingFragment> {
   void _initLocalRenderer() async {
     await _localRenderer.initialize();
     _localStream = await _getUserMediaStream;
-    _localStream?.getAudioTracks()[0].enabled = isMute;
-    _localStream?.getAudioTracks()[0].enabled = isMute;
-    _localStream?.getVideoTracks()[0].enabled = isCameraOn;
+    if (!widget.info.isFrontCamera) onCameraSwitch();
+    onCameraOn();
+    onMute();
     setState(() {
       _localRenderer.srcObject = _localStream;
       _widgetMap['local'] = ContributorCard(
@@ -81,12 +81,30 @@ class MeetingFragmentState extends State<MeetingFragment> {
     _offerAnswerHostUser();
   }
 
-  void silentMode(bool silent) => Helper.setSpeakerphoneOn(silent);
+  void onSilent(bool silent) => Helper.setSpeakerphoneOn(silent);
 
-  void switchCamera() {
+  void onCameraSwitch() {
     if (_localStream != null) {
       Helper.switchCamera(_localStream!.getVideoTracks()[0]);
     }
+  }
+
+  void onCameraOn() {
+    if (_localStream != null) {
+      _localStream?.getVideoTracks()[0].enabled = isCameraOn;
+      _changeStatus(key: 'isCameraOn');
+    }
+  }
+
+  void onMute() {
+    if (_localStream != null) {
+      _localStream?.getAudioTracks()[0].enabled = !isMute;
+      _changeStatus(key: 'isMute');
+    }
+  }
+
+  void onRiseHand() {
+    _changeStatus(key: 'handUp');
   }
 
   void _offerAnswerHostUser() {
@@ -199,10 +217,7 @@ class MeetingFragmentState extends State<MeetingFragment> {
                   size: 32,
                   onClick: () {
                     isCameraOn = !isCameraOn;
-                    setState(() {
-                      _localStream?.getVideoTracks()[0].enabled = isCameraOn;
-                      _changeStatus(key: 'isCameraOn');
-                    });
+                    setState(onCameraOn);
                   },
                 ),
                 ImageButton(
@@ -212,10 +227,7 @@ class MeetingFragmentState extends State<MeetingFragment> {
                   size: 32,
                   onClick: () {
                     isMute = !isMute;
-                    setState(() {
-                      _localStream?.getAudioTracks()[0].enabled = isMute;
-                      _changeStatus(key: 'isMute');
-                    });
+                    setState(onMute);
                   },
                 ),
                 ImageButton(
@@ -225,9 +237,7 @@ class MeetingFragmentState extends State<MeetingFragment> {
                   size: 32,
                   onClick: () {
                     isRiseHand = !isRiseHand;
-                    setState(() {
-                      _changeStatus(key: 'handUp');
-                    });
+                    setState(onRiseHand);
                   },
                 ),
                 ImageButton(

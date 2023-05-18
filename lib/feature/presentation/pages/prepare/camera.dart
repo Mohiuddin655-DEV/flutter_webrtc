@@ -5,6 +5,7 @@ import '../../index.dart';
 class MeetingCamera extends StatefulWidget {
   final bool initialCameraEnable;
   final bool initialMuteEnable;
+  final CameraType cameraType;
   final Function(bool isCameraOn) onCameraStateChange;
   final Function(bool isMicroOn) onMicroStateChange;
 
@@ -12,6 +13,7 @@ class MeetingCamera extends StatefulWidget {
     Key? key,
     this.initialCameraEnable = false,
     this.initialMuteEnable = true,
+    this.cameraType = CameraType.front,
     required this.onCameraStateChange,
     required this.onMicroStateChange,
   }) : super(key: key);
@@ -38,11 +40,11 @@ class _MeetingCameraState extends State<MeetingCamera> {
         alignment: Alignment.center,
         children: [
           if (isCameraOn)
-            const SizedBox(
+            SizedBox(
               width: 150,
               height: 250,
               child: CameraView(
-                type: CameraType.back,
+                type: widget.cameraType,
               ),
             ),
           Container(

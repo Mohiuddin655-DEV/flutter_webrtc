@@ -86,18 +86,23 @@ class _PrepareActivityState extends State<PrepareActivity> {
           ],
         ),
         body: PrepareFragment(
-          id: widget.meetingId,
-          onPrepare: (context, info) => Navigator.pushReplacementNamed(
-            context,
-            MeetingActivity.route,
-            arguments: {
-              "data": info.attach(
-                isSilent: isSilent,
-                cameraType: isFrontCamera ? CameraType.front : CameraType.back,
-              ),
-              "HomeController": context.read<HomeController>(),
-            },
+          info: MeetingInfo(
+            id: widget.meetingId,
+            isCameraOn: true,
+            isSilent: isSilent,
+            isMuted: true,
+            cameraType: isFrontCamera ? CameraType.front : CameraType.back,
           ),
+          onPrepare: (context, info) {
+            Navigator.pushReplacementNamed(
+              context,
+              MeetingActivity.route,
+              arguments: {
+                "data": info,
+                "HomeController": context.read<HomeController>(),
+              },
+            );
+          },
         ),
       ),
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../../index.dart';
 
@@ -27,6 +26,20 @@ class _MeetingActivityState extends State<MeetingActivity> {
   late bool isFrontCamera = widget.data.isFrontCamera;
 
   final globalKey = GlobalKey<MeetingFragmentState>();
+
+  @override
+  void initState() {
+    silent();
+    super.initState();
+  }
+
+  void silent() {
+    globalKey.currentState?.onSilent(isSilent);
+  }
+
+  void switchCamera() {
+    globalKey.currentState?.onCameraSwitch();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,19 +86,21 @@ class _MeetingActivityState extends State<MeetingActivity> {
                     ImageButton(
                       onClick: () {
                         isSilent = !isSilent;
-                        setState(() {
-                          globalKey.currentState?.silentMode(isSilent);
-                        });
+                        setState(silent);
                       },
                       icon: isSilent
-                          ? Icons.volume_up_outlined
-                          : Icons.volume_off_outlined,
+                          ? Icons.volume_off_outlined
+                          : Icons.volume_up_outlined,
                     ),
                     ImageButton(
                       onClick: () {
-                        globalKey.currentState?.switchCamera();
+                        isFrontCamera = !isFrontCamera;
+                        setState(switchCamera);
                       },
-                      icon: Icons.flip_camera_android_outlined,
+                      icon: isFrontCamera
+                          ? Icons.camera_front_outlined
+                          : Icons.camera_rear_outlined,
+                      tint: Colors.white,
                     ),
                   ],
                 )

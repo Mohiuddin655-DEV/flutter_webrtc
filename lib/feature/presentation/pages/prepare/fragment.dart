@@ -4,12 +4,12 @@ import 'package:share_plus/share_plus.dart';
 import '../../../../index.dart';
 
 class PrepareFragment extends StatefulWidget {
-  final String id;
+  final MeetingInfo info;
   final OnPrepare onPrepare;
 
   const PrepareFragment({
     Key? key,
-    required this.id,
+    required this.info,
     required this.onPrepare,
   }) : super(key: key);
 
@@ -18,8 +18,8 @@ class PrepareFragment extends StatefulWidget {
 }
 
 class _PrepareFragmentState extends State<PrepareFragment> {
-  bool isCameraOn = false;
-  bool isMuted = true;
+  late bool isCameraOn = widget.info.isCameraOn;
+  late bool isMuted = widget.info.isMuted;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ class _PrepareFragmentState extends State<PrepareFragment> {
               vertical: 16,
             ),
             child: Text(
-              widget.id,
+              widget.info.id,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.black,
@@ -43,8 +43,9 @@ class _PrepareFragmentState extends State<PrepareFragment> {
             ),
           ),
           MeetingCamera(
-            initialCameraEnable: true,
-            initialMuteEnable: true,
+            initialCameraEnable: isCameraOn,
+            initialMuteEnable: isMuted,
+            cameraType: widget.info.cameraType,
             onCameraStateChange: (value) {
               isCameraOn = value;
             },
@@ -112,7 +113,7 @@ class _PrepareFragmentState extends State<PrepareFragment> {
               horizontal: 24,
               vertical: 12,
             ),
-            child:  Row(
+            child: Row(
               children: [
                 const Icon(
                   Icons.info_outline,
@@ -134,9 +135,11 @@ class _PrepareFragmentState extends State<PrepareFragment> {
                   icon: Icons.share_outlined,
                   tint: Colors.black,
                   size: 24,
-                  onClick: (){
-                    print(widget.id);
-                    Share.share(widget.id, subject: "Let's go to meeting ... ");
+                  onClick: () {
+                    Share.share(
+                      widget.info.id,
+                      subject: "Let's go to meeting ... ",
+                    );
                   },
                 ),
               ],
@@ -146,11 +149,13 @@ class _PrepareFragmentState extends State<PrepareFragment> {
             text: "Join",
             icon: Icons.videocam_outlined,
             margin: const EdgeInsets.all(32),
-            onPressed: () => widget.onPrepare(context, MeetingInfo(
-              id: widget.id,
-              isCameraOn: isCameraOn,
-              isMuted: isMuted,
-            )),
+            onPressed: () => widget.onPrepare(
+              context,
+              widget.info.attach(
+                isCameraOn: isCameraOn,
+                isMuted: isMuted,
+              ),
+            ),
           ),
         ],
       ),
